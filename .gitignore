@@ -1,0 +1,9 @@
+# Just file name 그냥 파일 이름
+# /[filename] : file on certain route
+# [dir name]/ : ends with / means it's a directory /로 끝나면 디렉토리
+# ![file not to ignore or exception] 
+# [route]/**/[all the files have this name]
+# *.txt : all txt files
+
+*.o
+*.a
