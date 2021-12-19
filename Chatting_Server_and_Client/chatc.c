@@ -26,7 +26,7 @@ ChatClient(void)
 	fgets(buf, MAX_BUF, stdin);
 	*strchr(buf, '\n') = '\0';
 
-	// Send Packet (first packet : ID)
+	// Log In : Send Packet (first packet : ID)
 	if (send(Sockfd, buf, strlen(buf)+1, 0) < 0)  {
 		perror("send");
 		exit(1);
@@ -34,7 +34,7 @@ ChatClient(void)
 	printf("Press ^C to exit\n");
 
 	while (1)  {
-		// select system call
+		// Send Messages by select system call
 		FD_ZERO(&fdset);
 		FD_SET(Sockfd, &fdset);
 		FD_SET(STDIN_FILENO, &fdset);
@@ -45,21 +45,25 @@ ChatClient(void)
 			exit(1);
 		}
 		while (count--)  {
+			// have message from server
 			if (FD_ISSET(Sockfd, &fdset))  {
 				// wait for message from other Users(Server)
 				if ((n = recv(Sockfd, buf, MAX_BUF, 0)) < 0)  {
 					perror("recv");
 					exit(1);
 				}
+				// case : Server terminated
 				if (n == 0)  {
 					fprintf(stderr, "Server terminated.....\n");
 					close(Sockfd);
 					exit(1);
 				}
+				// case : received message from server
 				printf("%s", buf);
-			}
+			} 
+			// have message from user(send server that msg)
 			else if (FD_ISSET(STDIN_FILENO, &fdset))  {
-				// get input
+				// stdinput to buffer
 				fgets(buf, MAX_BUF, stdin);
 				// and send it
 				if ((n = send(Sockfd, buf, strlen(buf)+1, 0)) < 0)  {
