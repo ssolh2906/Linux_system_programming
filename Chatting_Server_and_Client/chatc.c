@@ -25,6 +25,8 @@ ChatClient(void)
 	fflush(stdout);
 	fgets(buf, MAX_BUF, stdin);
 	*strchr(buf, '\n') = '\0';
+
+	// Send Packet (first packet : ID)
 	if (send(Sockfd, buf, strlen(buf)+1, 0) < 0)  {
 		perror("send");
 		exit(1);
@@ -32,6 +34,7 @@ ChatClient(void)
 	printf("Press ^C to exit\n");
 
 	while (1)  {
+		// select system call
 		FD_ZERO(&fdset);
 		FD_SET(Sockfd, &fdset);
 		FD_SET(STDIN_FILENO, &fdset);
@@ -43,6 +46,7 @@ ChatClient(void)
 		}
 		while (count--)  {
 			if (FD_ISSET(Sockfd, &fdset))  {
+				// wait for message from other Users(Server)
 				if ((n = recv(Sockfd, buf, MAX_BUF, 0)) < 0)  {
 					perror("recv");
 					exit(1);
@@ -55,7 +59,9 @@ ChatClient(void)
 				printf("%s", buf);
 			}
 			else if (FD_ISSET(STDIN_FILENO, &fdset))  {
+				// get input
 				fgets(buf, MAX_BUF, stdin);
+				// and send it
 				if ((n = send(Sockfd, buf, strlen(buf)+1, 0)) < 0)  {
 					perror("send");
 					exit(1);
@@ -86,10 +92,12 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// create socket, 
 	if ((Sockfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)  {
 		perror("socket");
 		exit(1);
 	}
+
 
 	bzero((char *)&servAddr, sizeof(servAddr));
 	servAddr.sin_family = PF_INET;
@@ -105,7 +113,7 @@ int main(int argc, char *argv[])
 		}
 		memcpy(&servAddr.sin_addr, hp->h_addr, hp->h_length);
 	}
-
+	// connect
 	if (connect(Sockfd, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0)  {
 		perror("connect");
 		exit(1);
