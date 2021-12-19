@@ -1,0 +1,5 @@
+# Linux System Programming 2021-fall Final Project
+## Solhee Park
+
+## 1. Modify Chats.c to use select system call for multiplexting, without generation threads
+## 2. Multi-Threads programming with select system call, not multiplexing
