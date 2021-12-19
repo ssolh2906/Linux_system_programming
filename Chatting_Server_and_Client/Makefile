@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS =
-LDFLAGS = -lsocket -lnsl -lpthread
+LDFLAGS =  -lnsl -lpthread
 
 .SUFFIXES : .c .o
 .c.o :

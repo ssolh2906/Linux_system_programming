@@ -1,7 +1,10 @@
+// Use select system call for multiplexing
+// Not Threads
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -54,6 +57,7 @@ SendToOtherClients(int id, char *buf)
 	fflush(stdout);
 #endif
 
+	// mutex, send message to all inUse User
 	pthread_mutex_lock(&Mutex);
 	for (i = 0 ; i < MAX_CLIENT ; i++)  {
 		if (Client[i].inUse && (i != id))  {
@@ -82,6 +86,7 @@ ProcessClient(int id)
 		exit(1);
 	}
 
+	// recieve a packet
 	if ((n = recv(Client[id].sockfd, Client[id].uid, MAX_ID, 0)) < 0)  {
 		perror("recv");
 		exit(1);
@@ -89,10 +94,12 @@ ProcessClient(int id)
 	printf("Client %d log-in(ID: %s).....\n", id, Client[id].uid);
 
 	while (1)  {
+		// wait for input
 		if ((n = recv(Client[id].sockfd, buf, MAX_BUF, 0)) < 0)  {
 			perror("recv");
 			exit(1);
 		}
+		// case : logout
 		if (n == 0)  {
 			printf("Client %d log-out(ID: %s).....\n", id, Client[id].uid);
 
@@ -106,7 +113,7 @@ ProcessClient(int id)
 
 			pthread_exit(NULL);
 		}
-
+		// case : messages
 		SendToOtherClients(id, buf);
 	}
 }
@@ -147,38 +154,50 @@ int main(int argc, char *argv[])
 	int					newSockfd, cliAddrLen, id, one = 1;
 	struct sockaddr_in	cliAddr, servAddr;
 
+	// close server signal 등록
 	signal(SIGINT, CloseServer);
 	if (pthread_mutex_init(&Mutex, NULL) < 0)  {
 		perror("pthread_mutex_init");
 		exit(1);
 	}
 
+	// create socket
+	// arg[0] : IPv4
+	// arg[1] : TCP
 	if ((Sockfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)  {
 		perror("socket");
 		exit(1);
 	}
+
 
 	if (setsockopt(Sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)  {
 		perror("setsockopt");
 		exit(1);
 	}
 
+	// 메모리할당하여 servAddr 구조체 생성
 	bzero((char *)&servAddr, sizeof(servAddr));
 	servAddr.sin_family = PF_INET;
 	servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servAddr.sin_port = htons(SERV_TCP_PORT);
 
+
+	// Bind a name to an unnamed socket
 	if (bind(Sockfd, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0)  {
 		perror("bind");
 		exit(1);
 	}
 
+	// On server, Listen connection on a socket
+	// arg[1] : backlog
 	listen(Sockfd, 5);
 
 	printf("Chat server started.....\n");
 
+
 	cliAddrLen = sizeof(cliAddr);
 	while (1)  {
+		// accept a connection on a socket
 		newSockfd = accept(Sockfd, (struct sockaddr *) &cliAddr, &cliAddrLen);
 		if (newSockfd < 0)  {
 			perror("accept");
@@ -188,6 +207,7 @@ int main(int argc, char *argv[])
 		id = GetID();
 		Client[id].sockfd = newSockfd;
 		
+		// create a thread to handle this Client
 		if (pthread_create(&Client[id].tid, NULL, (void *)ProcessClient, (void *)id) < 0)  {
 			perror("pthread_create");
 			exit(1);

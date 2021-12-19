@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
@@ -75,7 +76,7 @@ CloseClient(int signo)
 }
 
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	struct sockaddr_in	servAddr;
 	struct hostent		*hp;
@@ -113,4 +114,6 @@ main(int argc, char *argv[])
 	signal(SIGINT, CloseClient);
 
 	ChatClient();
+
+	return 0;
 }
