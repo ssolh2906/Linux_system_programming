@@ -77,15 +77,6 @@ ProcessClient(int id)
 	char	buf[MAX_BUF];
 	int		n;
 
-	if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL))  {
-		perror("pthread_setcancelstate");
-		exit(1);
-	}
-	if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))  {
-		perror("pthread_setcanceltype");
-		exit(1);
-	}
-
 	// recieve a packet
 	if ((n = recv(Client[id].sockfd, Client[id].uid, MAX_ID, 0)) < 0)  {
 		perror("recv");
@@ -151,8 +142,10 @@ CloseServer(int signo)
 
 int main(int argc, char *argv[])
 {
-	int					newSockfd, cliAddrLen, id, one = 1;
+	int					newSockfd, cliAddrLen, id, count,one = 1;
 	struct sockaddr_in	cliAddr, servAddr;
+	fd_set				fdvar;
+
 
 	// close server signal 등록
 	signal(SIGINT, CloseServer);
@@ -190,28 +183,55 @@ int main(int argc, char *argv[])
 
 	// On server, Listen connection on a socket
 	// arg[1] : backlog
-	listen(Sockfd, 5);
+	//listen(Sockfd, 5);
 
 	printf("Chat server started.....\n");
 
 
 	cliAddrLen = sizeof(cliAddr);
 	while (1)  {
-		// accept a connection on a socket
-		newSockfd = accept(Sockfd, (struct sockaddr *) &cliAddr, &cliAddrLen);
-		if (newSockfd < 0)  {
-			perror("accept");
+		FD_ZERO(&fdvar);
+		FD_SET(Sockfd, &fdvar);
+
+		if ((count = select(MAX_CLIENT, &fdvar, (fd_set *)NULL, (fd_set *) NULL, 
+		(struct timeval *)NULL) < 0))
+		{
+			perror("select");
 			exit(1);
+		}
+		
+		signal(SIGINT, CloseServer);
+
+		while (count --) {
+			// count 만큼 받은 입력 처리
+			if (FD_ISSET(Sockfd, &fdvar))
+			{
+				id = GetID();
+				Client[id].sockfd = newSockfd;
+				ProcessClient(&Client[id]);
+			}
+			
+			signal(SIGINT, CloseServer);
 		}
 
-		id = GetID();
-		Client[id].sockfd = newSockfd;
+		
+		
+		// // accept a connection on a socket
+		// newSockfd = accept(Sockfd, (struct sockaddr *) &cliAddr, &cliAddrLen);
+		// if (newSockfd < 0)  {
+		// 	perror("accept");
+		// 	exit(1);
+		// }
+
+
 		
 		// create a thread to handle this Client
-		if (pthread_create(&Client[id].tid, NULL, (void *)ProcessClient, (void *)id) < 0)  {
-			perror("pthread_create");
-			exit(1);
-		}
+		// if (pthread_create(&Client[id].tid, NULL, (void *)ProcessClient, (void *)id) < 0)  {
+		// 	perror("pthread_create");
+		// 	exit(1);
+		// }
+
+
 	}
 	return 0;
 }

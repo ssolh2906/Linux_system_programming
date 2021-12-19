@@ -6,11 +6,14 @@ LDFLAGS =  -lnsl -lpthread
 .c.o :
 	$(CC) -c $(CFLAGS) $<
 
-ALL = chats chatc
+ALL = chats chatc chats1
 
 all: $(ALL)
 
 chats: chats.o 
+	$(CC) -o $@ $< $(LDFLAGS)
+	
+chats1: chats1.o
 	$(CC) -o $@ $< $(LDFLAGS)
 
 chatc: chatc.o 
